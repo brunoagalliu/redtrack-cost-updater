@@ -287,7 +287,7 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
-          // Find these two sections and update them:
+
 
 <div>
   <label className="block text-sm font-semibold mb-2 text-gray-700">
