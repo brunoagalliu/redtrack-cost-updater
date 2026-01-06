@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
 
+interface Campaign {
+  id: string;
+  serial_number: number;
+  name: string;
+}
+
 export async function GET() {
   try {
     const apiKey = process.env.REDTRACK_API_KEY;
@@ -28,11 +34,11 @@ export async function GET() {
     const data = await response.json();
 
     if (data.items && Array.isArray(data.items)) {
-      const campaigns = data.items.map((campaign: any) => ({
+      const campaigns: Campaign[] = data.items.map((campaign: any) => ({
         id: campaign.id,
         serial_number: campaign.serial_number,
         name: campaign.title,
-      })).sort((a, b) => a.name.localeCompare(b.name));
+      })).sort((a: Campaign, b: Campaign) => a.name.localeCompare(b.name));
 
       console.log(`Total campaigns loaded: ${campaigns.length}`);
 
@@ -40,11 +46,11 @@ export async function GET() {
     }
 
     if (Array.isArray(data)) {
-      const campaigns = data.map((campaign: any) => ({
+      const campaigns: Campaign[] = data.map((campaign: any) => ({
         id: campaign.id,
         serial_number: campaign.serial_number,
         name: campaign.title,
-      })).sort((a, b) => a.name.localeCompare(b.name));
+      })).sort((a: Campaign, b: Campaign) => a.name.localeCompare(b.name));
 
       console.log(`Total campaigns loaded: ${campaigns.length}`);
 
