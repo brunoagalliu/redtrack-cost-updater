@@ -287,50 +287,58 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
-  <div>
-    <label className="block text-sm font-semibold mb-2 text-gray-700">
-      Start Date *
-    </label>
-    <div 
-      className={`${inputClass} cursor-pointer flex items-center justify-between`}
-      onClick={() => document.getElementById('start-date')?.showPicker()}
-    >
-      <span className="text-gray-900">{startDate || 'Select date'}</span>
-      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-      <input
-        id="start-date"
-        type="date"
-        value={startDate}
-        onChange={(e) => setStartDate(e.target.value)}
-        className="absolute opacity-0 w-0 h-0"
-        required
-      />
-    </div>
+          // Find these two sections and update them:
+
+<div>
+  <label className="block text-sm font-semibold mb-2 text-gray-700">
+    Start Date *
+  </label>
+  <div 
+    className={`${inputClass} cursor-pointer flex items-center justify-between`}
+    onClick={() => {
+      const input = document.getElementById('start-date') as HTMLInputElement;
+      input?.showPicker?.();
+    }}
+  >
+    <span className="text-gray-900">{startDate || 'Select date'}</span>
+    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+    <input
+      id="start-date"
+      type="date"
+      value={startDate}
+      onChange={(e) => setStartDate(e.target.value)}
+      className="absolute opacity-0 w-0 h-0"
+      required
+    />
   </div>
-  <div>
-    <label className="block text-sm font-semibold mb-2 text-gray-700">
-      End Date *
-    </label>
-    <div 
-      className={`${inputClass} cursor-pointer flex items-center justify-between`}
-      onClick={() => document.getElementById('end-date')?.showPicker()}
-    >
-      <span className="text-gray-900">{endDate || 'Select date'}</span>
-      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-      <input
-        id="end-date"
-        type="date"
-        value={endDate}
-        onChange={(e) => setEndDate(e.target.value)}
-        className="absolute opacity-0 w-0 h-0"
-        required
-      />
-    </div>
+</div>
+<div>
+  <label className="block text-sm font-semibold mb-2 text-gray-700">
+    End Date *
+  </label>
+  <div 
+    className={`${inputClass} cursor-pointer flex items-center justify-between`}
+    onClick={() => {
+      const input = document.getElementById('end-date') as HTMLInputElement;
+      input?.showPicker?.();
+    }}
+  >
+    <span className="text-gray-900">{endDate || 'Select date'}</span>
+    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+    <input
+      id="end-date"
+      type="date"
+      value={endDate}
+      onChange={(e) => setEndDate(e.target.value)}
+      className="absolute opacity-0 w-0 h-0"
+      required
+    />
   </div>
+</div>
 </div>
 
           <div>
