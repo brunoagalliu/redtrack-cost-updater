@@ -1,7 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState, useRef } from 'react';
 import CostHistory from './components/CostHistory';
+import { signOut } from 'next-auth/react';
 
 interface Campaign {
   id: string;
@@ -14,7 +17,31 @@ interface SubOption {
   label: string;
 }
 
+
 export default function Home() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center">
+        <div className="text-xl text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  // Only render the page if authenticated
+  if (status !== 'authenticated') {
+    return null;
+  }
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([]);
   const [campaignSearch, setCampaignSearch] = useState('');
@@ -185,6 +212,18 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Redtrack Cost Updater</h1>
           <p className="text-gray-600">Update campaign costs quickly and easily</p>
         </div>
+        <div className="text-center mb-8">
+  <div className="flex justify-end mb-4">
+    <button
+      onClick={() => signOut()}
+      className="text-sm text-gray-600 hover:text-gray-900"
+    >
+      Sign Out
+    </button>
+  </div>
+  <h1 className="text-4xl font-bold text-gray-900 mb-2">Redtrack Cost Updater</h1>
+  <p className="text-gray-600">Update campaign costs quickly and easily</p>
+</div>
 
         <div className="grid md:grid-cols-3 gap-4 mb-6">
           <button
