@@ -1,10 +1,9 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
+import { useState, useEffect, useRef } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
 import CostHistory from './components/CostHistory';
-import { signOut } from 'next-auth/react';
 
 interface Campaign {
   id: string;
@@ -17,31 +16,10 @@ interface SubOption {
   label: string;
 }
 
-
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [status, router]);
-
-  // Show loading while checking authentication
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center">
-        <div className="text-xl text-gray-600">Loading...</div>
-      </div>
-    );
-  }
-
-  // Only render the page if authenticated
-  if (status !== 'authenticated') {
-    return null;
-  }
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([]);
   const [campaignSearch, setCampaignSearch] = useState('');
@@ -62,12 +40,21 @@ export default function Home() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [shouldFetchSubs, setShouldFetchSubs] = useState(false);
 
+  // Redirect to login if not authenticated
   useEffect(() => {
-    fetchCampaigns();
-    const today = new Date().toISOString().split('T')[0];
-    setStartDate(today);
-    setEndDate(today);
-  }, []);
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchCampaigns();
+      const today = new Date().toISOString().split('T')[0];
+      setStartDate(today);
+      setEndDate(today);
+    }
+  }, [status]);
 
   useEffect(() => {
     if (campaignSearch.trim() === '') {
@@ -83,7 +70,6 @@ export default function Home() {
     }
   }, [campaignSearch, campaigns]);
 
-  // Only fetch subs when explicitly triggered
   useEffect(() => {
     if (selectedCampaign && shouldFetchSubs) {
       fetchSubOptionsForCampaign(selectedCampaign);
@@ -148,7 +134,7 @@ export default function Home() {
     setShowDropdown(false);
     setSubName('');
     setSubValue('');
-    setShouldFetchSubs(true); // Trigger subs fetch
+    setShouldFetchSubs(true);
   };
 
   const handleCampaignInputClick = () => {
@@ -205,22 +191,35 @@ export default function Home() {
 
   const inputClass = "w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none transition text-gray-900 bg-white";
 
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center">
+        <div className="text-xl text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  // Only render the page if authenticated
+  if (status !== 'authenticated') {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 py-12 px-4">
       <div className="max-w-4xl mx-auto">
-
         <div className="text-center mb-8">
-  <div className="flex justify-end mb-4">
-    <button
-      onClick={() => signOut()}
-      className="text-sm text-gray-600 hover:text-gray-900"
-    >
-      Sign Out
-    </button>
-  </div>
-  <h1 className="text-4xl font-bold text-gray-900 mb-2">Redtrack Cost Updater</h1>
-  <p className="text-gray-600">Update campaign costs quickly and easily</p>
-</div>
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => signOut()}
+              className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-white transition"
+            >
+              Sign Out
+            </button>
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Redtrack Cost Updater</h1>
+          <p className="text-gray-600">Update campaign costs quickly and easily</p>
+        </div>
 
         <div className="grid md:grid-cols-3 gap-4 mb-6">
           <button
@@ -323,59 +322,57 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
-
-
-<div>
-  <label className="block text-sm font-semibold mb-2 text-gray-700">
-    Start Date *
-  </label>
-  <div 
-    className={`${inputClass} cursor-pointer flex items-center justify-between`}
-    onClick={() => {
-      const input = document.getElementById('start-date') as HTMLInputElement;
-      input?.showPicker?.();
-    }}
-  >
-    <span className="text-gray-900">{startDate || 'Select date'}</span>
-    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-    </svg>
-    <input
-      id="start-date"
-      type="date"
-      value={startDate}
-      onChange={(e) => setStartDate(e.target.value)}
-      className="absolute opacity-0 w-0 h-0"
-      required
-    />
-  </div>
-</div>
-<div>
-  <label className="block text-sm font-semibold mb-2 text-gray-700">
-    End Date *
-  </label>
-  <div 
-    className={`${inputClass} cursor-pointer flex items-center justify-between`}
-    onClick={() => {
-      const input = document.getElementById('end-date') as HTMLInputElement;
-      input?.showPicker?.();
-    }}
-  >
-    <span className="text-gray-900">{endDate || 'Select date'}</span>
-    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-    </svg>
-    <input
-      id="end-date"
-      type="date"
-      value={endDate}
-      onChange={(e) => setEndDate(e.target.value)}
-      className="absolute opacity-0 w-0 h-0"
-      required
-    />
-  </div>
-</div>
-</div>
+            <div>
+              <label className="block text-sm font-semibold mb-2 text-gray-700">
+                Start Date *
+              </label>
+              <div 
+                className={`${inputClass} cursor-pointer flex items-center justify-between`}
+                onClick={() => {
+                  const input = document.getElementById('start-date') as HTMLInputElement;
+                  input?.showPicker?.();
+                }}
+              >
+                <span className="text-gray-900">{startDate || 'Select date'}</span>
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <input
+                  id="start-date"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="absolute opacity-0 w-0 h-0"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2 text-gray-700">
+                End Date *
+              </label>
+              <div 
+                className={`${inputClass} cursor-pointer flex items-center justify-between`}
+                onClick={() => {
+                  const input = document.getElementById('end-date') as HTMLInputElement;
+                  input?.showPicker?.();
+                }}
+              >
+                <span className="text-gray-900">{endDate || 'Select date'}</span>
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <input
+                  id="end-date"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="absolute opacity-0 w-0 h-0"
+                  required
+                />
+              </div>
+            </div>
+          </div>
 
           <div>
             <label className="block text-sm font-semibold mb-2 text-gray-700">
