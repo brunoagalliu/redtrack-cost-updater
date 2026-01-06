@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import CostHistory from './components/CostHistory';
 
 interface Campaign {
   id: string;
@@ -11,12 +10,13 @@ interface Campaign {
   name: string;
 }
 
-interface SubOption {
-  value: string;
-  label: string;
+interface Click {
+  clickid: string;
+  created_at: string;
+  campaign_name: string;
 }
 
-export default function Home() {
+export default function RevenuePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -24,23 +24,20 @@ export default function Home() {
   const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([]);
   const [campaignSearch, setCampaignSearch] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
-  const [subOptions, setSubOptions] = useState<SubOption[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState('');
   const [selectedCampaignName, setSelectedCampaignName] = useState('');
+  const [clicks, setClicks] = useState<Click[]>([]);
+  const [selectedClickId, setSelectedClickId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [cost, setCost] = useState('');
-  const [countryCode, setCountryCode] = useState('');
-  const [subName, setSubName] = useState('');
-  const [subValue, setSubValue] = useState('');
+  const [payout, setPayout] = useState('');
+  const [conversionType, setConversionType] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [campaignsLoading, setCampaignsLoading] = useState(true);
-  const [subsLoading, setSubsLoading] = useState(false);
+  const [clicksLoading, setClicksLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [shouldFetchSubs, setShouldFetchSubs] = useState(false);
 
-  // Redirect to login if not authenticated
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
@@ -71,17 +68,6 @@ export default function Home() {
   }, [campaignSearch, campaigns]);
 
   useEffect(() => {
-    if (selectedCampaign && shouldFetchSubs) {
-      fetchSubOptionsForCampaign(selectedCampaign);
-      setShouldFetchSubs(false);
-    } else if (!selectedCampaign) {
-      setSubOptions([]);
-      setSubName('');
-      setSubValue('');
-    }
-  }, [selectedCampaign, shouldFetchSubs]);
-
-  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
@@ -109,21 +95,32 @@ export default function Home() {
     }
   };
 
-  const fetchSubOptionsForCampaign = async (campaignId: string) => {
-    setSubsLoading(true);
+  const fetchClicks = async () => {
+    if (!selectedCampaign || !startDate || !endDate) return;
+
+    setClicksLoading(true);
     try {
-      const response = await fetch(`/api/subs/${campaignId}`);
+      const response = await fetch('/api/clicks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaign_id: selectedCampaign,
+          date_from: startDate,
+          date_to: endDate,
+        }),
+      });
+
       const data = await response.json();
-      setSubOptions(data.subs || []);
+      setClicks(data.clicks || []);
       
-      if (data.subs && data.subs.length === 0) {
-        console.log('No subs found for this campaign');
+      if (data.clicks && data.clicks.length > 0) {
+        setSelectedClickId(data.clicks[0].clickid);
       }
     } catch (error) {
-      console.error('Failed to fetch sub options:', error);
-      setSubOptions([]);
+      console.error('Failed to fetch clicks:', error);
+      setMessage('✗ Failed to load clicks.');
     } finally {
-      setSubsLoading(false);
+      setClicksLoading(false);
     }
   };
 
@@ -132,9 +129,8 @@ export default function Home() {
     setSelectedCampaignName(`#${campaign.serial_number} - ${campaign.name}`);
     setCampaignSearch('');
     setShowDropdown(false);
-    setSubName('');
-    setSubValue('');
-    setShouldFetchSubs(true);
+    setClicks([]);
+    setSelectedClickId('');
   };
 
   const handleCampaignInputClick = () => {
@@ -148,30 +144,25 @@ export default function Home() {
     setMessage('');
 
     try {
-      const response = await fetch('/api/update-cost', {
+      const response = await fetch('/api/update-revenue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           campaign_id: selectedCampaign,
-          time_from: startDate,
-          time_to: endDate,
-          cost: parseFloat(cost),
-          country_code: countryCode || undefined,
-          sub_name: subName || undefined,
-          sub_value: subValue || undefined,
+          clickid: selectedClickId,
+          payout: parseFloat(payout),
+          type: conversionType,
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setMessage('✓ Cost updated successfully!');
-        setCost('');
-        setCountryCode('');
-        setSubName('');
-        setSubValue('');
+        setMessage('✓ Revenue updated successfully!');
+        setPayout('');
+        setConversionType('');
       } else {
-        setMessage(`✗ Error: ${data.error || 'Failed to update cost'}`);
+        setMessage(`✗ Error: ${data.error || 'Failed to update revenue'}`);
       }
     } catch (error) {
       setMessage('✗ Network error. Please try again.');
@@ -191,7 +182,6 @@ export default function Home() {
 
   const inputClass = "w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none transition text-gray-900 bg-white";
 
-  // Show loading while checking authentication
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center">
@@ -200,7 +190,6 @@ export default function Home() {
     );
   }
 
-  // Only render the page if authenticated
   if (status !== 'authenticated') {
     return null;
   }
@@ -209,13 +198,13 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <div className="flex justify-end mb-4">
-          <button
-    onClick={() => router.push('/revenue')}
-    className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-white transition"
-  >
-    Revenue Updater →
-  </button>
+          <div className="flex justify-between items-center mb-4">
+            <button
+              onClick={() => router.push('/')}
+              className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-white transition"
+            >
+              ← Back to Cost Updater
+            </button>
             <button
               onClick={() => signOut()}
               className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-white transition"
@@ -223,8 +212,8 @@ export default function Home() {
               Sign Out
             </button>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Redtrack Cost Updater</h1>
-          <p className="text-gray-600">Update campaign costs quickly and easily</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Revenue Updater</h1>
+          <p className="text-gray-600">Update conversion revenue for campaigns</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-4 mb-6">
@@ -335,7 +324,7 @@ export default function Home() {
               <div 
                 className={`${inputClass} cursor-pointer flex items-center justify-between`}
                 onClick={() => {
-                  const input = document.getElementById('start-date') as HTMLInputElement;
+                  const input = document.getElementById('start-date-revenue') as HTMLInputElement;
                   input?.showPicker?.();
                 }}
               >
@@ -344,7 +333,7 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <input
-                  id="start-date"
+                  id="start-date-revenue"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
@@ -360,7 +349,7 @@ export default function Home() {
               <div 
                 className={`${inputClass} cursor-pointer flex items-center justify-between`}
                 onClick={() => {
-                  const input = document.getElementById('end-date') as HTMLInputElement;
+                  const input = document.getElementById('end-date-revenue') as HTMLInputElement;
                   input?.showPicker?.();
                 }}
               >
@@ -369,7 +358,7 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <input
-                  id="end-date"
+                  id="end-date-revenue"
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
@@ -380,75 +369,71 @@ export default function Home() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-700">
-              Cost (USD) *
-            </label>
-            <div className="relative">
-              <span className="absolute left-4 top-3 text-gray-600 text-lg font-semibold">$</span>
-              <input
-                type="number"
-                step="0.01"
-                value={cost}
-                onChange={(e) => setCost(e.target.value)}
-                className={`${inputClass} pl-8`}
-                placeholder="0.00"
-                required
-              />
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={fetchClicks}
+            disabled={!selectedCampaign || !startDate || !endDate || clicksLoading}
+            className="w-full bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 disabled:bg-gray-400 font-semibold transition"
+          >
+            {clicksLoading ? 'Loading Clicks...' : `Load Clicks (${clicks.length} loaded)`}
+          </button>
 
-          <div className="border-t pt-5">
-            <p className="text-sm font-semibold mb-3 text-gray-700">Optional Filters</p>
-            
-            <div className="space-y-4">
+          {clicks.length > 0 && (
+            <>
               <div>
-                <label className="block text-sm mb-2 text-gray-600">Country Code</label>
-                <input
-                  type="text"
-                  value={countryCode}
-                  onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Click ID *
+                </label>
+                <select
+                  value={selectedClickId}
+                  onChange={(e) => setSelectedClickId(e.target.value)}
                   className={inputClass}
-                  placeholder="e.g. US, GB, DE"
-                  maxLength={2}
-                />
+                  required
+                >
+                  {clicks.map((click) => (
+                    <option key={click.clickid} value={click.clickid}>
+                      {click.clickid.substring(0, 20)}... ({new Date(click.created_at).toLocaleString()})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-sm text-gray-500 mt-1">
+                  {clicks.length} clicks available
+                </p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm mb-2 text-gray-600">
-                    Sub Name {subsLoading && <span className="text-xs text-blue-600">(Loading...)</span>}
-                  </label>
-                  <select
-                    value={subName}
-                    onChange={(e) => setSubName(e.target.value)}
-                    className={inputClass}
-                    disabled={!selectedCampaign || subsLoading}
-                  >
-                    <option value="">
-                      {!selectedCampaign ? 'Select campaign first' : subsLoading ? 'Loading subs...' : subOptions.length === 0 ? 'No subs available' : 'Select sub name'}
-                    </option>
-                    {subOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm mb-2 text-gray-600">Sub Value</label>
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Payout (USD) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-3 text-gray-600 text-lg font-semibold">$</span>
                   <input
-                    type="text"
-                    value={subValue}
-                    onChange={(e) => setSubValue(e.target.value)}
-                    className={`${inputClass} disabled:bg-gray-100 disabled:text-gray-500`}
-                    placeholder="e.g. 12345"
-                    disabled={!subName}
+                    type="number"
+                    step="0.01"
+                    value={payout}
+                    onChange={(e) => setPayout(e.target.value)}
+                    className={`${inputClass} pl-8`}
+                    placeholder="0.00"
+                    required
                   />
                 </div>
               </div>
-            </div>
-          </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Conversion Type *
+                </label>
+                <input
+                  type="text"
+                  value={conversionType}
+                  onChange={(e) => setConversionType(e.target.value)}
+                  className={inputClass}
+                  placeholder="e.g. sale, lead, signup"
+                  required
+                />
+              </div>
+            </>
+          )}
 
           {message && (
             <div
@@ -464,14 +449,12 @@ export default function Home() {
 
           <button
             type="submit"
-            disabled={loading || campaignsLoading}
+            disabled={loading || !selectedClickId}
             className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 font-semibold text-lg transition shadow-lg hover:shadow-xl"
           >
-            {loading ? 'Updating...' : 'Update Cost'}
+            {loading ? 'Updating...' : 'Update Revenue'}
           </button>
         </form>
-
-        <CostHistory />
       </div>
     </div>
   );
