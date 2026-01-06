@@ -16,7 +16,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Try simple date format first (YYYY-MM-DD)
     const params = new URLSearchParams({
       api_key: apiKey,
       date_from: body.date_from,
@@ -42,26 +41,38 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('Response data type:', typeof data);
-    console.log('Is array:', Array.isArray(data));
+    console.log('Full response data:', JSON.stringify(data, null, 2));
+    console.log('Response keys:', Object.keys(data));
     
+    let clicks = [];
+    
+    // Check different possible structures
     if (Array.isArray(data)) {
-      console.log('Number of clicks:', data.length);
-      if (data.length > 0) {
-        console.log('First click sample:', JSON.stringify(data[0], null, 2));
-      }
+      clicks = data;
+    } else if (data.items && Array.isArray(data.items)) {
+      clicks = data.items;
+    } else if (data.tracks && Array.isArray(data.tracks)) {
+      clicks = data.tracks;
+    } else if (data.data && Array.isArray(data.data)) {
+      clicks = data.data;
+    }
+    
+    console.log('Found clicks:', clicks.length);
+    
+    if (clicks.length > 0) {
+      console.log('First click sample:', JSON.stringify(clicks[0], null, 2));
     }
     
     // Transform the data
-    const clicks = Array.isArray(data) ? data.map((click: any) => ({
-      clickid: click.clickid || click.click_id,
-      created_at: click.created_at,
+    const transformedClicks = clicks.map((click: any) => ({
+      clickid: click.clickid || click.click_id || click.id,
+      created_at: click.created_at || click.timestamp,
       campaign_name: click.campaign_name || click.campaign,
-    })) : [];
+    }));
 
-    console.log('Returning clicks:', clicks.length);
+    console.log('Returning clicks:', transformedClicks.length);
 
-    return NextResponse.json({ clicks });
+    return NextResponse.json({ clicks: transformedClicks });
   } catch (error) {
     console.error('Clicks fetch error:', error);
     return NextResponse.json(
