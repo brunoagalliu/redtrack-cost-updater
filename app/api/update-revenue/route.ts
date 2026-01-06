@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const payload = [{
       campaign_id: body.campaign_id,
       clickid: body.clickid,
-      created_at: new Date().toISOString(),
+      created_at: body.created_at, // Use the provided date
       payout: body.payout,
       type: body.type,
     }];
@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
       const singlePayload = {
         campaign_id: body.campaign_id,
         clickid: body.clickid,
+        created_at: body.created_at,
         payout: body.payout,
         type: body.type,
       };

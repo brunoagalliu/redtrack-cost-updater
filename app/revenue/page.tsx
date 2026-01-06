@@ -30,6 +30,7 @@ export default function RevenuePage() {
   const [selectedClickId, setSelectedClickId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [conversionDate, setConversionDate] = useState(''); // New: conversion date
   const [payout, setPayout] = useState('');
   const [conversionType, setConversionType] = useState('');
   const [loading, setLoading] = useState(false);
@@ -50,6 +51,7 @@ export default function RevenuePage() {
       const today = new Date().toISOString().split('T')[0];
       setStartDate(today);
       setEndDate(today);
+      setConversionDate(today); // Initialize conversion date to today
     }
   }, [status]);
 
@@ -144,6 +146,9 @@ export default function RevenuePage() {
     setMessage('');
 
     try {
+      // Convert date to ISO format with midday time (12:00:00)
+      const conversionDateTime = new Date(conversionDate + 'T12:00:00Z').toISOString();
+
       const response = await fetch('/api/update-revenue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -152,6 +157,7 @@ export default function RevenuePage() {
           clickid: selectedClickId,
           payout: parseFloat(payout),
           type: conversionType,
+          created_at: conversionDateTime,
         }),
       });
 
@@ -398,6 +404,35 @@ export default function RevenuePage() {
                 </select>
                 <p className="text-sm text-gray-500 mt-1">
                   {clicks.length} clicks available
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Conversion Date *
+                </label>
+                <div 
+                  className={`${inputClass} cursor-pointer flex items-center justify-between`}
+                  onClick={() => {
+                    const input = document.getElementById('conversion-date') as HTMLInputElement;
+                    input?.showPicker?.();
+                  }}
+                >
+                  <span className="text-gray-900">{conversionDate || 'Select date'}</span>
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <input
+                    id="conversion-date"
+                    type="date"
+                    value={conversionDate}
+                    onChange={(e) => setConversionDate(e.target.value)}
+                    className="absolute opacity-0 w-0 h-0"
+                    required
+                  />
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  Conversion will be recorded at 12:00 PM (midday)
                 </p>
               </div>
 
