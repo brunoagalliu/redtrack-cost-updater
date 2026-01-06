@@ -16,15 +16,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const payload = {
+    // Try sending as an array (common pattern for bulk APIs)
+    const payload = [{
       campaign_id: body.campaign_id,
       clickid: body.clickid,
       created_at: new Date().toISOString(),
       payout: body.payout,
       type: body.type,
-    };
+    }];
 
-    console.log('Sending payload:', payload);
+    console.log('Sending payload as array:', JSON.stringify(payload, null, 2));
 
     const response = await fetch(
       `https://api.redtrack.io/conversions?api_key=${apiKey}`,
@@ -42,13 +43,44 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorData = await response.json();
       console.log('Error response:', errorData);
-      return NextResponse.json(
-        { error: errorData.error || 'Failed to update revenue' },
-        { status: response.status }
+      
+      // If array didn't work, try as single object
+      console.log('Retrying as single object...');
+      
+      const singlePayload = {
+        campaign_id: body.campaign_id,
+        clickid: body.clickid,
+        payout: body.payout,
+        type: body.type,
+      };
+      
+      const retryResponse = await fetch(
+        `https://api.redtrack.io/conversions?api_key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(singlePayload),
+        }
       );
+      
+      console.log('Retry response status:', retryResponse.status);
+      
+      if (!retryResponse.ok) {
+        const retryError = await retryResponse.json();
+        console.log('Retry error response:', retryError);
+        return NextResponse.json(
+          { error: retryError.error || 'Failed to update revenue' },
+          { status: retryResponse.status }
+        );
+      }
+      
+      console.log('Revenue updated successfully (retry)!');
+      return NextResponse.json({ success: true });
     }
 
-    // Success
+    // Success on first try
     console.log('Revenue updated successfully!');
     return NextResponse.json({ success: true });
 
