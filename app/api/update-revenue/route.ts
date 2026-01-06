@@ -16,13 +16,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Default to "Conversion" if type is not provided or empty
+    const conversionType = body.type && body.type.trim() !== '' ? body.type : 'Conversion';
+
     // Try sending as an array (common pattern for bulk APIs)
     const payload = [{
       campaign_id: body.campaign_id,
       clickid: body.clickid,
-      created_at: body.created_at, // Use the provided date
+      created_at: body.created_at,
       payout: body.payout,
-      type: body.type,
+      type: conversionType,
     }];
 
     console.log('Sending payload as array:', JSON.stringify(payload, null, 2));
@@ -52,7 +55,7 @@ export async function POST(request: NextRequest) {
         clickid: body.clickid,
         created_at: body.created_at,
         payout: body.payout,
-        type: body.type,
+        type: conversionType,
       };
       
       const retryResponse = await fetch(

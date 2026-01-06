@@ -31,8 +31,10 @@ export default function RevenuePage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [conversionDate, setConversionDate] = useState(''); // New: conversion date
+  
   const [payout, setPayout] = useState('');
-  const [conversionType, setConversionType] = useState('');
+//   const [conversionType, setConversionType] = useState('');
+  const [conversionType, setConversionType] = useState('Conversion');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [campaignsLoading, setCampaignsLoading] = useState(true);
@@ -455,18 +457,20 @@ export default function RevenuePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-2 text-gray-700">
-                  Conversion Type *
-                </label>
-                <input
-                  type="text"
-                  value={conversionType}
-                  onChange={(e) => setConversionType(e.target.value)}
-                  className={inputClass}
-                  placeholder="e.g. sale, lead, signup"
-                  required
-                />
-              </div>
+  <label className="block text-sm font-semibold mb-2 text-gray-700">
+    Conversion Type
+  </label>
+  <input
+    type="text"
+    value={conversionType}
+    onChange={(e) => setConversionType(e.target.value)}
+    className={inputClass}
+    placeholder="Conversion (default)"
+  />
+  <p className="text-sm text-gray-500 mt-1">
+    Leave empty to use default: "Conversion"
+  </p>
+</div>
             </>
           )}
 
