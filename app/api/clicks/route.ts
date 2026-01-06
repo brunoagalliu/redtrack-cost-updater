@@ -16,18 +16,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert dates to ISO format
-    const timeFrom = new Date(body.date_from + 'T00:00:00Z').toISOString();
-    const timeTo = new Date(body.date_to + 'T23:59:59Z').toISOString();
-
-    console.log('Date from:', timeFrom);
-    console.log('Date to:', timeTo);
-    console.log('Campaign ID:', body.campaign_id);
-
+    // Try simple date format first (YYYY-MM-DD)
     const params = new URLSearchParams({
       api_key: apiKey,
-      date_from: timeFrom,
-      date_to: timeTo,
+      date_from: body.date_from,
+      date_to: body.date_to,
       campaign_id: body.campaign_id,
       per: '100',
     });
@@ -55,7 +48,7 @@ export async function POST(request: NextRequest) {
     if (Array.isArray(data)) {
       console.log('Number of clicks:', data.length);
       if (data.length > 0) {
-        console.log('First click sample:', data[0]);
+        console.log('First click sample:', JSON.stringify(data[0], null, 2));
       }
     }
     
